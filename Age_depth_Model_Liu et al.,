@@ -1,0 +1,99 @@
+library(rbacon)
+
+# Testate-amoeba study:
+# 11 radiocarbon dates plus the AD 2012 core surface
+
+samples <- data.frame(
+  Depth_cm = c(
+    0, 54, 100, 119, 154, 188,
+    208, 284, 353, 384, 578, 700
+  ),
+  
+  Lab_ID = c(
+    "Core_surface",
+    "368996",
+    "330145",
+    "368997",
+    "368998",
+    "369001",
+    "368999",
+    "369000",
+    "369002",
+    "369003",
+    "369004",
+    "330146"
+  ),
+  
+  Sample = c(
+    "Core surface AD 2012",
+    "TRIU53-55",
+    "TRIU-100",
+    "TRIU118-120",
+    "TRIU153-155",
+    "TRIU188-189",
+    "TRIU208-209",
+    "TRIU283-285",
+    "TRIU353-354",
+    "TRIU384-385",
+    "TRIU578-579",
+    "TRIU-700"
+  ),
+  
+  Age_type = c(
+    "Calendar constraint",
+    rep("Radiocarbon", 11)
+  ),
+  
+  Conventional_14C_BP = c(
+    NA,
+    90, 410, 480, 570, 730,
+    830, 1070, 1580, 1810, 3970, 4430
+  ),
+  
+  Error_1sigma = c(
+    1,
+    30, 30, 30, 30, 30,
+    30, 30, 30, 30, 30, 40
+  )
+)
+
+bacon_results <- do.call(
+  rbind,
+  lapply(samples$Depth_cm, function(d) {
+    
+    ages <- as.numeric(Bacon.Age.d(d))
+    ages <- ages[is.finite(ages)]
+    
+    data.frame(
+      Depth_cm = d,
+      
+      Bacon_mean_cal_BP =
+        mean(ages),
+      
+      Bacon_median_cal_BP =
+        median(ages),
+      
+      Bacon_68.3_min_cal_BP =
+        unname(quantile(ages, 0.1585)),
+      
+      Bacon_68.3_max_cal_BP =
+        unname(quantile(ages, 0.8415)),
+      
+      Bacon_95.4_min_cal_BP =
+        unname(quantile(ages, 0.023)),
+      
+      Bacon_95.4_max_cal_BP =
+        unname(quantile(ages, 0.977))
+    )
+  })
+)
+
+# Preserve the original depth order
+bacon_results <- bacon_results[
+  match(samples$Depth_cm, bacon_results$Depth_cm),
+]
+
+excel_table <- cbind(
+  samples,
+  bacon_results[, -1]
+)
