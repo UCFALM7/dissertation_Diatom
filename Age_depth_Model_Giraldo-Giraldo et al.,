@@ -1,48 +1,158 @@
 library(rbacon)
 
-samples <- data.frame(
-  Depth_cm = c(385, 354, 284, 209, 189, 154, 119, 100, 54),
-  Lab_ID = c(
-    "369003", "369002", "369000",
-    "368999", "369001", "368998",
-    "368997", "330145", "368996"
+# =========================================================
+# Giraldo-Giraldo chronology
+# Nine published radiocarbon dates
+# IntCal13 and historical Bacon priors
+# =========================================================
+
+core <- "TRIU_Giraldo_IntCal13"
+root <- file.path(getwd(), "Bacon_runs")
+folder <- file.path(root, core)
+
+# Location of the IntCal13 curve supplied by rintcal
+curve_dir <- system.file("extdata", package = "rintcal")
+curve_file <- "3Col_intcal13.14C"
+
+# Remove any previous run with this name
+unlink(folder, recursive = TRUE, force = TRUE)
+dir.create(folder, recursive = TRUE, showWarnings = FALSE)
+
+# Nine dates and depths reported by Giraldo-Giraldo et al.
+dates <- data.frame(
+  "lab ID" = c(
+    "368996", "330145", "368997",
+    "368998", "369001", "368999",
+    "369000", "369002", "369003"
   ),
-  Sample = c(
-    "TRIU384-385", "TRIU353-354", "TRIU283-285",
-    "TRIU208-209", "TRIU188-189", "TRIU153-155",
-    "TRIU118-120", "TRIU-100", "TRIU53-55"
+  
+  Age = c(
+    90, 410, 480,
+    570, 730, 830,
+    1070, 1580, 1810
   ),
-  Conventional_14C_BP = c(
-    1810, 1580, 1070, 830, 730,
-    570, 480, 410, 90
+  
+  Error = c(
+    30, 30, 30,
+    30, 30, 30,
+    30, 30, 30
   ),
-  Error_1sigma = c(30, 30, 30, 30, 30, 30, 30, 30, 30)
+  
+  Depth = c(
+    54, 100, 119,
+    154, 189, 209,
+    284, 354, 385
+  ),
+  
+  # cc=4 tells current Bacon to use the IntCal13 custom curve
+  cc = rep(4, 9),
+  
+  check.names = FALSE
 )
 
-bacon_results <- do.call(
-  rbind,
-  lapply(samples$Depth_cm, function(d) {
-    
-    ages <- Bacon.Age.d(d)
-    
-    data.frame(
-      Depth_cm = d,
-      Bacon_mean_cal_BP = mean(ages, na.rm = TRUE),
-      Bacon_median_cal_BP = median(ages, na.rm = TRUE),
-      
-      Bacon_68.3_min = unname(
-        quantile(ages, 0.1585, na.rm = TRUE)
-      ),
-      Bacon_68.3_max = unname(
-        quantile(ages, 0.8415, na.rm = TRUE)
-      ),
-      
-      Bacon_95.4_min = unname(
-        quantile(ages, 0.023, na.rm = TRUE)
-      ),
-      Bacon_95.4_max = unname(
-        quantile(ages, 0.977, na.rm = TRUE)
-      )
-    )
-  })
+write.csv(
+  dates,
+  file.path(folder, paste0(core, ".csv")),
+  row.names = FALSE,
+  quote = FALSE
 )
+
+# Run the actual age-depth model
+Bacon(
+  core = core,
+  coredir = root,
+  
+  cc4 = curve_file,
+  cc.dir = curve_dir,
+  
+  # Giraldo-Giraldo core interval
+  d.min = 0,
+  d.max = 401,
+  d.by = 1,
+  thick = 5,
+  
+  # Bacon defaults used before the 2021 update
+  acc.shape = 1.5,
+  acc.mean = 20,
+  mem.strength = 4,
+  mem.mean = 0.7,
+  ssize = 2000,
+  cutoff = 0.001,
+  
+  # More closely resembles the older Bacon behaviour
+  add.bottom = FALSE,
+  
+  seed = 2017,
+  remember = FALSE,
+  suggest = FALSE,
+  ask = FALSE,
+  plot.pdf = FALSE
+)
+
+# Sample names for the output table
+sample_names <- c(
+  "TRIU53-55",
+  "TRIU-100",
+  "TRIU118-120",
+  "TRIU153-155",
+  "TRIU188-189",
+  "TRIU208-209",
+  "TRIU283-285",
+  "TRIU353-354",
+  "TRIU384-385"
+)
+
+# Extract posterior age estimates at each dated depth
+summarise_age <- function(d) {
+  
+  ages <- Bacon.Age.d(
+    d,
+    set = info,
+    na.rm = TRUE
+  )
+  
+  c(
+    Bacon_mean_cal_BP =
+      mean(ages, na.rm = TRUE),
+    
+    Bacon_median_cal_BP =
+      median(ages, na.rm = TRUE),
+    
+    Bacon_68.3_min_cal_BP =
+      unname(quantile(ages, 0.1585, na.rm = TRUE)),
+    
+    Bacon_68.3_max_cal_BP =
+      unname(quantile(ages, 0.8415, na.rm = TRUE)),
+    
+    Bacon_95.4_min_cal_BP =
+      unname(quantile(ages, 0.023, na.rm = TRUE)),
+    
+    Bacon_95.4_max_cal_BP =
+      unname(quantile(ages, 0.977, na.rm = TRUE))
+  )
+}
+
+results <- as.data.frame(
+  t(sapply(dates$Depth, summarise_age))
+)
+
+excel_table <- data.frame(
+  Depth_cm = dates$Depth,
+  Lab_ID = dates[["lab ID"]],
+  Sample = sample_names,
+  Conventional_14C_BP = dates$Age,
+  Error_1sigma = dates$Error,
+  round(results, 4),
+  check.names = FALSE
+)
+
+# Print tab-separated text for direct copying into Excel
+write.table(
+  excel_table,
+  file = "",
+  sep = "\t",
+  row.names = FALSE,
+  quote = FALSE
+)
+
+
