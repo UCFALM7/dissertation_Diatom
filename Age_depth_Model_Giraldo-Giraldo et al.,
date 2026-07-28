@@ -25,28 +25,28 @@ dates <- data.frame(
     "368998", "369001", "368999",
     "369000", "369002", "369003"
   ),
-  
+
   Age = c(
     90, 410, 480,
     570, 730, 830,
     1070, 1580, 1810
   ),
-  
+
   Error = c(
     30, 30, 30,
     30, 30, 30,
     30, 30, 30
   ),
-  
+
   Depth = c(
     54, 100, 119,
     154, 189, 209,
     284, 354, 385
   ),
-  
+
   # cc=4 tells current Bacon to use the IntCal13 custom curve
   cc = rep(4, 9),
-  
+
   check.names = FALSE
 )
 
@@ -61,16 +61,16 @@ write.csv(
 Bacon(
   core = core,
   coredir = root,
-  
+
   cc4 = curve_file,
   cc.dir = curve_dir,
-  
+
   # Giraldo-Giraldo core interval
   d.min = 0,
   d.max = 401,
   d.by = 1,
   thick = 5,
-  
+
   # Bacon defaults used before the 2021 update
   acc.shape = 1.5,
   acc.mean = 20,
@@ -78,10 +78,10 @@ Bacon(
   mem.mean = 0.7,
   ssize = 2000,
   cutoff = 0.001,
-  
+
   # More closely resembles the older Bacon behaviour
   add.bottom = FALSE,
-  
+
   seed = 2017,
   remember = FALSE,
   suggest = FALSE,
@@ -104,29 +104,29 @@ sample_names <- c(
 
 # Extract posterior age estimates at each dated depth
 summarise_age <- function(d) {
-  
+
   ages <- Bacon.Age.d(
     d,
     set = info,
     na.rm = TRUE
   )
-  
+
   c(
     Bacon_mean_cal_BP =
       mean(ages, na.rm = TRUE),
-    
+
     Bacon_median_cal_BP =
       median(ages, na.rm = TRUE),
-    
+
     Bacon_68.3_min_cal_BP =
       unname(quantile(ages, 0.1585, na.rm = TRUE)),
-    
+
     Bacon_68.3_max_cal_BP =
       unname(quantile(ages, 0.8415, na.rm = TRUE)),
-    
+
     Bacon_95.4_min_cal_BP =
       unname(quantile(ages, 0.023, na.rm = TRUE)),
-    
+
     Bacon_95.4_max_cal_BP =
       unname(quantile(ages, 0.977, na.rm = TRUE))
   )
@@ -154,5 +154,3 @@ write.table(
   row.names = FALSE,
   quote = FALSE
 )
-
-
