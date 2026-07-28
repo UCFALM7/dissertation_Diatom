@@ -1,15 +1,36 @@
 library(rbacon)
 
-# Testate-amoeba study:
-# 11 radiocarbon dates plus the AD 2012 core surface
+# =========================================================
+# Liu et al. testate-amoeba chronology
+# 11 radiocarbon dates + AD 2012 surface
+# IntCal13 calibration
+# =========================================================
 
-samples <- data.frame(
-  Depth_cm = c(
-    0, 54, 100, 119, 154, 188,
-    208, 284, 353, 384, 578, 700
-  ),
-  
-  Lab_ID = c(
+core <- "TRIU_Liu_Testate"
+root <- file.path(getwd(), "Bacon_runs")
+folder <- file.path(root, core)
+
+# IntCal13 file supplied with rintcal
+curve_dir <- system.file("extdata", package = "rintcal")
+curve_file <- "3Col_intcal13.14C"
+
+if (!file.exists(file.path(curve_dir, curve_file))) {
+  stop("The IntCal13 calibration-curve file was not found.")
+}
+
+# Remove any earlier run with the same name
+if (dir.exists(folder)) {
+  unlink(folder, recursive = TRUE, force = TRUE)
+}
+
+dir.create(folder, recursive = TRUE, showWarnings = FALSE)
+
+# ---------------------------------------------------------
+# Chronological controls
+# ---------------------------------------------------------
+
+dates <- data.frame(
+  "lab ID" = c(
     "Core_surface",
     "368996",
     "330145",
@@ -24,76 +45,97 @@ samples <- data.frame(
     "330146"
   ),
   
-  Sample = c(
-    "Core surface AD 2012",
-    "TRIU53-55",
-    "TRIU-100",
-    "TRIU118-120",
-    "TRIU153-155",
-    "TRIU188-189",
-    "TRIU208-209",
-    "TRIU283-285",
-    "TRIU353-354",
-    "TRIU384-385",
-    "TRIU578-579",
-    "TRIU-700"
+  Age = c(
+    -62,       # AD 2012 expressed as cal BP
+    90,
+    410,
+    480,
+    570,
+    730,
+    830,
+    1070,
+    1580,
+    1810,
+    3970,
+    4430
   ),
   
-  Age_type = c(
-    "Calendar constraint",
-    rep("Radiocarbon", 11)
+  Error = c(
+    1,         # practical uncertainty for the known surface year
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    30,
+    40
   ),
   
-  Conventional_14C_BP = c(
-    NA,
-    90, 410, 480, 570, 730,
-    830, 1070, 1580, 1810, 3970, 4430
+  Depth = c(
+    0,
+    54,
+    100,
+    119,
+    154,
+    188,
+    208,
+    284,
+    353,
+    384,
+    578,
+    700
   ),
   
-  Error_1sigma = c(
-    1,
-    30, 30, 30, 30, 30,
-    30, 30, 30, 30, 30, 40
-  )
+  # cc=0: age already expressed in calendar BP
+  # cc=4: use the alternative IntCal13 curve
+  cc = c(
+    0,
+    rep(4, 11)
+  ),
+  
+  check.names = FALSE
 )
 
-bacon_results <- do.call(
-  rbind,
-  lapply(samples$Depth_cm, function(d) {
-    
-    ages <- as.numeric(Bacon.Age.d(d))
-    ages <- ages[is.finite(ages)]
-    
-    data.frame(
-      Depth_cm = d,
-      
-      Bacon_mean_cal_BP =
-        mean(ages),
-      
-      Bacon_median_cal_BP =
-        median(ages),
-      
-      Bacon_68.3_min_cal_BP =
-        unname(quantile(ages, 0.1585)),
-      
-      Bacon_68.3_max_cal_BP =
-        unname(quantile(ages, 0.8415)),
-      
-      Bacon_95.4_min_cal_BP =
-        unname(quantile(ages, 0.023)),
-      
-      Bacon_95.4_max_cal_BP =
-        unname(quantile(ages, 0.977))
-    )
-  })
+write.csv(
+  dates,
+  file.path(folder, paste0(core, ".csv")),
+  row.names = FALSE,
+  quote = FALSE
 )
 
-# Preserve the original depth order
-bacon_results <- bacon_results[
-  match(samples$Depth_cm, bacon_results$Depth_cm),
-]
+# ---------------------------------------------------------
+# Run the Bacon model
+# ---------------------------------------------------------
 
-excel_table <- cbind(
-  samples,
-  bacon_results[, -1]
+Bacon(
+  core = core,
+  coredir = root,
+  
+  # Alternative calibration curve
+  cc4 = curve_file,
+  cc.dir = curve_dir,
+  
+  # Model entire core at 1-cm output resolution
+  d.min = 0,
+  d.max = 700,
+  d.by = 1,
+  thick = 5,
+  
+  # Bacon defaults used before the 2021 update
+  acc.shape = 1.5,
+  acc.mean = 20,
+  mem.strength = 4,
+  mem.mean = 0.7,
+  ssize = 2000,
+  cutoff = 0.001,
+  
+  seed = 2019,
+  remember = FALSE,
+  suggest = FALSE,
+  ask = FALSE,
+  plot.pdf = FALSE
 )
