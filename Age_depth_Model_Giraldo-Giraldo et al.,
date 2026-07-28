@@ -1,0 +1,48 @@
+library(rbacon)
+
+samples <- data.frame(
+  Depth_cm = c(385, 354, 284, 209, 189, 154, 119, 100, 54),
+  Lab_ID = c(
+    "369003", "369002", "369000",
+    "368999", "369001", "368998",
+    "368997", "330145", "368996"
+  ),
+  Sample = c(
+    "TRIU384-385", "TRIU353-354", "TRIU283-285",
+    "TRIU208-209", "TRIU188-189", "TRIU153-155",
+    "TRIU118-120", "TRIU-100", "TRIU53-55"
+  ),
+  Conventional_14C_BP = c(
+    1810, 1580, 1070, 830, 730,
+    570, 480, 410, 90
+  ),
+  Error_1sigma = c(30, 30, 30, 30, 30, 30, 30, 30, 30)
+)
+
+bacon_results <- do.call(
+  rbind,
+  lapply(samples$Depth_cm, function(d) {
+    
+    ages <- Bacon.Age.d(d)
+    
+    data.frame(
+      Depth_cm = d,
+      Bacon_mean_cal_BP = mean(ages, na.rm = TRUE),
+      Bacon_median_cal_BP = median(ages, na.rm = TRUE),
+      
+      Bacon_68.3_min = unname(
+        quantile(ages, 0.1585, na.rm = TRUE)
+      ),
+      Bacon_68.3_max = unname(
+        quantile(ages, 0.8415, na.rm = TRUE)
+      ),
+      
+      Bacon_95.4_min = unname(
+        quantile(ages, 0.023, na.rm = TRUE)
+      ),
+      Bacon_95.4_max = unname(
+        quantile(ages, 0.977, na.rm = TRUE)
+      )
+    )
+  })
+)
