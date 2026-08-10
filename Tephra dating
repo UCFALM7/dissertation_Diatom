@@ -1,0 +1,36 @@
+ Options(){Resolution=1;};
+
+Plot()
+{
+Curve("IntCal20","intcal20.14c");
+Curve("SHCal20","shcal20.14c");
+Mix_Curves("Mixed IntCal20-SHCal20","IntCal20","SHCal20",U(0,100));
+
+R_Date("Cerro Bravo 625±70",625,70);
+R_Date("Cerro Bravo 900±110",900,110);
+R_Date("Cerro Bravo 1200±35",1200,35);
+R_Date("Cerro Bravo 2410±60",2410,60);
+R_Date("Cerro Bravo 6197±120",6197,120);
+R_Date("Cerro Bravo 7388±48",7388,48);
+R_Date("Cerro Bravo 8630±50",8630,50);
+R_Date("Cerro Bravo 10800±60",10800,60);
+
+R_Date("Ruiz 310±50",310,50);
+R_Date("Ruiz 600±50",600,50);
+R_Date("Ruiz 780±120",780,120);
+R_Date("Ruiz 840±60",840,60);
+R_Date("Ruiz 985±58",985,58);
+R_Date("Ruiz 1275±50",1275,50);
+R_Date("Ruiz 1930±70",1930,70);
+R_Date("Ruiz 2480±100",2480,100);
+R_Date("Ruiz 2668±70",2668,70);
+R_Date("Ruiz 3222±110",3222,110);
+R_Date("Ruiz 4750±110",4750,110);
+R_Date("Ruiz 5140±100",5140,100);
+R_Date("Ruiz 5550±90",5550,90);
+R_Date("Ruiz 8630±71",8630,71);
+R_Date("Ruiz 10520±660",10520,660);
+R_Date("Ruiz 32300±2200",32300,2200);
+
+R_Date("Santa Isabel 4750±90",4750,90);
+};
